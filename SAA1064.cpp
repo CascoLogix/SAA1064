@@ -112,8 +112,8 @@ SAA1064::SAA1064()
 
 void SAA1064::begin()				// Initialize interfaces
 {  
-	Wire.begin();        					// Join I2C bus
-	this->config7SegmentDriver();			// Configure the display driver IC
+	Wire.begin();        			// Join I2C bus
+	this->init();					// Configure the display driver IC
 }
 
 
@@ -142,6 +142,39 @@ void SAA1064::showDigit(uint8_t digit, uint8_t number, uint8_t dp) // Write a si
 	else
 	{
 		this->send7Seg(digit, NumberLookup[number]);
+	}
+}
+
+
+void SAA1064::showNumber(int32_t number)		// Write a number to the display
+{
+	static uint8_t digit[4];
+	static uint8_t index;
+	
+	if ((number >= 0) && (number < 10000))
+	{
+		for (index = 0; index < 4; index++)
+		{
+			digit[index] = number % 10;
+			number = number / 10;
+			this->showDigit(index + 1, digit[index]);
+		}
+	}
+	
+	else if ((number < 0) && (number > -999))
+	{
+		number = -number;
+		
+		this->send7Seg(4, 0x40);
+		
+		for (index = 0; index < 3; index++)
+		{
+			digit[index] = number % 10;
+			number = number / 10;
+			this->showDigit(index + 1, digit[index]);
+		}
+		
+		digit[3] = '-';
 	}
 }
 
@@ -414,7 +447,7 @@ void SAA1064::animate()						// Run the display test routine
 }
 
 
-void SAA1064::config7SegmentDriver()			// Configure the display driver IC
+void SAA1064::init()			// Configure the display driver IC
 {
 	// Configure 7-Segment to 12mA segment output current, Dynamic mode
 	//	and Digits 1, 2, 3 AND 4 are NOT blanked    
